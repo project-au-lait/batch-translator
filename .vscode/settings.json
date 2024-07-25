@@ -1,0 +1,17 @@
+{
+  "emeraldwalk.runonsave": {
+    "commands": [
+      {
+        "match": "\\.java$",
+        "cmd": "java -jar ./lib/google-java-format-1.8-all-deps.jar --replace ${file}"
+      }
+    ]
+  },
+  "java.format.enabled": false,
+  "java.test.config": {
+    "vmArgs": [
+      "-Ddev.aulait.bt.core.logging.level=DEBUG"
+    ]
+  },
+  "editor.formatOnSave": true
+}

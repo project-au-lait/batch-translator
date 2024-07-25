@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:if="ant:if"
+  xmlns:unless="ant:unless" name="batch-translator" basedir="." default="deploy">
+
+  <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpath="${maven.plugin.classpath}"/>
+
+  <condition property="os.windows" value="true" else="false">
+    <os family="windows" />
+  </condition>
+
+  <condition property="mvn.cmd" value="${basedir}\mvnw.cmd" else="${basedir}\mvnw">
+    <os family="windows" />
+  </condition>
+
+
+  <target name="deploy">
+    <exec executable="${mvn.cmd}" dir="${basedir}" failonerror="true">
+      <arg line="clean test sonar:sonar -P analyze --fail-at-end" />
+    </exec>
+
+    <!-- <exec executable="${mvn.cmd}" dir="${basedir}" failonerror="true">
+      <arg line="deploy -P release -Dmaven.test.skip=true" />
+    </exec> -->
+  </target>
+
+
+  <target name="set-version">
+
+    <property name="version" value="" />
+    <fail if:blank="${version}" message="Please specify version in the system properties. (e.g. mvnw -Dant.target=set-version -Dversion=1.x.x"/>
+
+    <exec executable="${mvn.cmd}" dir="${basedir}">
+      <arg line="versions:set -DnewVersion=${version} -DgenerateBackupPoms=false" />
+    </exec>
+
+    <if>
+      <not>
+        <matches string="${version}" pattern="^.*-SNAPSHOT$" />
+      </not>
+      <then>
+        <replaceregexp flags="g">
+          <regexp pattern="((?&lt;=batch-translator-core.*)|(?&lt;=version&gt;.*))(\d+[\.\d]+\d+)" />
+          <substitution expression="${version}" />
+          <fileset dir="${basedir}">
+            <include name="README*.md" />
+          </fileset>
+        </replaceregexp>
+      </then>
+    </if>
+
+  </target>
+
+  <target name="translate-readme">
+    <exec executable="${mvn.cmd}" dir="${basedir}" failonerror="true">
+      <arg line="-f batch-translator-core exec:java -Dexec.args='-m ja2en -s README_ja.md -t README.md'" />
+    </exec>
+
+    <replace file="README.md" token="[English](README.md)" value="[日本語](README_ja.md)"/>
+  </target>
+</project>

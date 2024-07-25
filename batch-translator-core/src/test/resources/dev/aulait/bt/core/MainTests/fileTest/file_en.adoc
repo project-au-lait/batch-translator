@@ -1,0 +1,9 @@
+= Asciidoc
+
+This is the text.
+
+----
+Code blocks are not translated.
+----
+
+The text will be translated.

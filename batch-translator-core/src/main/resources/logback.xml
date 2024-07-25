@@ -1,0 +1,17 @@
+<configuration>
+
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <!-- <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %-50.50logger - %msg%n</pattern> -->
+      <pattern>%msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <logger name="dev.aulait.bt.core" level="${dev.aulait.bt.core.logging.level:-INFO}" />
+
+  <root level="INFO">
+    <appender-ref ref="STDOUT" />
+  </root>
+
+
+</configuration>

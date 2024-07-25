@@ -1,0 +1,12 @@
+Target:
+Specify pairs of file or directory to be translated.
+The pair contains ":" between source and distination.
+
+  SourceFile:DistinationFile
+  SourceDirectory:DistinationDirectory
+
+Ex.)
+
+  README.md:README_en.md
+  docs:docs/en
+
