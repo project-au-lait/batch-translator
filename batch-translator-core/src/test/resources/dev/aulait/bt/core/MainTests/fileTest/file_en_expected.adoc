@@ -6,4 +6,4 @@ This is the text.
 コードブロックは翻訳されません。
 ----
 
-The text will be translated.
+The text is translated.

@@ -6,4 +6,4 @@ This is the text.
 Code blocks are not translated.
 ----
 
-The text will be translated.
+The text is translated.
