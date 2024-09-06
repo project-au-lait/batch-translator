@@ -82,6 +82,12 @@
       <artifactId>sts</artifactId>
       <version>2.20.22</version>
     </dependency>
+
+    <dependency>
+      <groupId>com.google.cloud</groupId>
+      <artifactId>google-cloud-translate</artifactId>
+      <version>2.48.0</version>
+    </dependency>
   </dependencies>
 
 
@@ -125,6 +131,17 @@
                   <mainClass>dev.aulait.bt.core.Main</mainClass>
                 </transformer>
               </transformers>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+
             </configuration>
           </execution>
         </executions>
