@@ -27,7 +27,7 @@ Batch Translator は Java コマンド、または Maven Plugin として実行�
 
 #### API Key の作成
 
-Batch Translator は翻訳エンジンに「みんなの自動翻訳＠TexTra®」「Amazon Translate」を使用しています。翻訳機能を使用するには以下のいずれかのサイトでアカウントを作成してください。
+Batch Translator は翻訳エンジンに「みんなの自動翻訳＠TexTra®」「Amazon Translate」「Cloud Translation API」を使用しています。翻訳機能を使用するには以下のいずれかのサイトでアカウントを作成してください。
 
 ##### みんなの自動翻訳＠TexTra® を使用する場合
 
@@ -73,6 +73,16 @@ Ex. ~/.aws/credentials
 aws_access_key_id=AKIAIOSFODNN7EXAMPLE
 aws_secret_access_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 ```
+
+##### Cloud Translation API を使用する場合
+
+https://console.cloud.google.com/getting-started
+
+アカウントを作成したら[APIの有効化](https://cloud.google.com/translate/docs/setup#api)を参考に、Cloud Translation APIを有効化します。
+
+次に[Google アカウントで ADC を構成する](https://cloud.google.com/docs/authentication/provide-credentials-adc#google-idp)を参考にADCを構成します。
+
+Cloud Translation APIの料金については[こちら](https://cloud.google.com/translate/pricing?hl=ja#basic-pricing)を参照してください。
 
 #### Java コマンドで実行
 
