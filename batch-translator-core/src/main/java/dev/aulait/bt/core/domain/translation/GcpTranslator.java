@@ -10,9 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class GcpTranslator implements Translator {
 
-  private static final Translate translate =
-      TranslateOptions.newBuilder().setApiKey("xxxxx").build().getService();
-
+  @Override
   public String ja2en(String text) {
     return translate(text, "ja", "en");
   }
@@ -23,12 +21,12 @@ public class GcpTranslator implements Translator {
   }
 
   private String translate(String text, String sourceLang, String targetLang) {
+    Translate translate = TranslateOptions.getDefaultInstance().getService();
     String translatedText =
         translate
             .translate(
                 text,
                 TranslateOption.format("html"),
-                Translate.TranslateOption.model("nmt"),
                 TranslateOption.sourceLanguage(sourceLang),
                 TranslateOption.targetLanguage(targetLang))
             .getTranslatedText();
