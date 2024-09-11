@@ -35,6 +35,7 @@ public class ParagraphGroup {
   }
 
   public void reduce(String text) {
+    text = text.replaceAll("([^\n])\n?" + DELIMITER_STRING + "\n?([^\n])", "$1" + DELIMITER + "$2");
     int i = 0;
     for (String paragraphText : text.split(DELIMITER)) {
       group.get(i++).setTranslatedText(paragraphText);

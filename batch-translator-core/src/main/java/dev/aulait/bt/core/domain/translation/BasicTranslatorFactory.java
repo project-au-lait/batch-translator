@@ -13,6 +13,7 @@ public class BasicTranslatorFactory {
   private static final MinhonTranslator minhonTranslator =
       new MinhonTranslator(new ApacheHttpWebClient(config), config);
   private static final AwsTranslator awsTranslator = new AwsTranslator();
+  private static final GcpTranslator gcpTranslator = new GcpTranslator();
 
   public static Translator createTranslator(TranslationEngine engine) {
     return createTranslator(String.valueOf(engine));
@@ -24,6 +25,8 @@ public class BasicTranslatorFactory {
         return minhonTranslator;
       case "AWS":
         return awsTranslator;
+      case "GCP":
+        return gcpTranslator;
       default:
         return minhonTranslator;
     }

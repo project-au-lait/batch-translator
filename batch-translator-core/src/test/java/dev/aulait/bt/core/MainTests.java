@@ -117,7 +117,7 @@ public class MainTests {
   }
 
   @Test
-  public void html2htmlTest() throws URISyntaxException, IOException {
+  public void html2htmlAwsTest() throws URISyntaxException, IOException {
     Path inputFile = Path.of(getClass().getResource("MainTests/fileTest/file.html").toURI());
     Path outputFile = inputFile.getParent().resolve("file_en_aws.html");
 
@@ -128,6 +128,22 @@ public class MainTests {
 
     Path expectedFile =
         Path.of(getClass().getResource("MainTests/fileTest/file_en_aws_expected.html").toURI());
+
+    assertEquals(Files.readString(expectedFile), Files.readString(outputFile));
+  }
+
+  @Test
+  public void html2htmlGcpTest() throws URISyntaxException, IOException {
+    Path inputFile = Path.of(getClass().getResource("MainTests/fileTest/file.html").toURI());
+    Path outputFile = inputFile.getParent().resolve("file_en_gcp.html");
+
+    main.execute(
+        new String[] {
+          "-m", "ja2en", "-s", inputFile.toString(), "-t", outputFile.toString(), "-e", "gcp"
+        });
+
+    Path expectedFile =
+        Path.of(getClass().getResource("MainTests/fileTest/file_en_gcp_expected.html").toURI());
 
     assertEquals(Files.readString(expectedFile), Files.readString(outputFile));
   }
