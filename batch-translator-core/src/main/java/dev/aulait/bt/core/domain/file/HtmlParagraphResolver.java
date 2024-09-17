@@ -15,7 +15,7 @@ import org.apache.commons.lang3.StringUtils;
 @Slf4j
 public class HtmlParagraphResolver implements ParagraphResolver {
 
-  private static final List<String> IGNORE_TAGS =
+  private static final List<String> INNER_IGNORE_TAGS =
       Arrays.asList("style", "script", "colgroup", "code");
 
   @Override
@@ -56,16 +56,16 @@ public class HtmlParagraphResolver implements ParagraphResolver {
         String tagName = getTagName(tag);
 
         // タグ前のテキスト検出
-        String preTagText = line.substring(lineCursor, matcher.start());
-        if (!preTagText.isBlank()) {
+        String beforeTagText = line.substring(lineCursor, matcher.start());
+        if (!beforeTagText.isBlank()) {
           paragraph.setIgnored(!openIgnoneTag.isEmpty());
           if (!paragraph.isIgnored()) {
-            preTagText = preTagText.replaceAll("(@[A-Za-z]*)(\\S)", "$1 $2");
+            beforeTagText = beforeTagText.replaceAll("(@[A-Za-z]*)(\\S)", "$1 $2");
           }
           if (lineCursor == 0) {
-            paragraph.append(preTagText);
+            paragraph.append(beforeTagText);
           } else {
-            paragraph.inlineAppend(preTagText);
+            paragraph.inlineAppend(beforeTagText);
           }
           if (openIgnoneTag.isEmpty() && !paragraph.getText().isEmpty()) {
             paragraphs.add(paragraph);
@@ -74,7 +74,7 @@ public class HtmlParagraphResolver implements ParagraphResolver {
         }
 
         // 無視タグ開始
-        if (openIgnoneTag.isEmpty() && IGNORE_TAGS.contains(tagName) && !tag.contains("/")) {
+        if (openIgnoneTag.isEmpty() && INNER_IGNORE_TAGS.contains(tagName) && !tag.contains("/")) {
           openIgnoneTag = tagName;
           if (!paragraph.getText().isEmpty()) {
             paragraphs.add(paragraph);
@@ -88,6 +88,10 @@ public class HtmlParagraphResolver implements ParagraphResolver {
         }
 
         // タグの処理
+        if (!paragraph.isIgnored() && !paragraph.getText().isEmpty()) {
+          paragraphs.add(paragraph);
+          paragraph = new Paragraph();
+        }
         paragraph.setIgnored(true);
         paragraph.inlineAppend(tag);
         if (openIgnoneTag.isEmpty() && !paragraph.getText().isEmpty()) {
