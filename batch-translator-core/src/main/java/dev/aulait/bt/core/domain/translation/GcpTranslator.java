@@ -26,7 +26,7 @@ public class GcpTranslator implements Translator {
         translate
             .translate(
                 text,
-                TranslateOption.format("html"),
+                TranslateOption.format("text"),
                 TranslateOption.sourceLanguage(sourceLang),
                 TranslateOption.targetLanguage(targetLang))
             .getTranslatedText();
