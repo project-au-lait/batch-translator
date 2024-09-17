@@ -5,18 +5,18 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
+@Slf4j
 public class HtmlParagraphResolver implements ParagraphResolver {
 
-  private static final String TAG_BR = "\\<br\\>";
-  private static final String REGEX_LINEBREAK = "\\r\\n|\\r|\\n";
-  private static final String REGEX_P_TABLEBLOCK =
-      "(^.*\\<p class\\=\"tableblock\"\\>)(.*)(\\<\\/p\\>.*)";
-  private static final Pattern PATTERN_P_TABLEBLOCK = Pattern.compile(REGEX_P_TABLEBLOCK);
+  private static final List<String> IGNORE_TAGS =
+      Arrays.asList("style", "script", "colgroup", "code");
 
   @Override
   public List<Paragraph> resolve(Path file) {
@@ -30,119 +30,93 @@ public class HtmlParagraphResolver implements ParagraphResolver {
     }
 
     List<Paragraph> paragraphs = new ArrayList<>();
+    Pattern tagPattern = Pattern.compile("<[^>]+>");
+    String openIgnoneTag = "";
+
     Paragraph paragraph = new Paragraph();
-    // 処理中のテキストがthタグ、もしくは、tdタグ内に存在するかを判定するフラグ
-    boolean inTableData = false;
-    boolean inTag = false;
-    // thタグ、tdタグ内のテキストを一時的に格納する変数
-    StringBuilder tableData = new StringBuilder();
 
     for (String line : lines) {
 
-      // 画像は翻訳不要。srcが大きすぎる場合にAPIリクエスト文字列のサーズオーバーを防ぐため
-      if (line.contains("<img")) {
-        paragraph = resetParagraph(paragraphs, paragraph);
-        paragraph.setIgnored(true);
-        inTag = true;
-      }
-      // 以下のタグが次にくるまで翻訳しない
-      // ・</style>
-      // ・</script>
-      // ・</colgroup>
-      if (line.contains("<style>") || line.contains("<script>") || line.contains("<colgroup>")) {
-        if (paragraph.getText() != null && !paragraph.getText().isEmpty()) {
-          paragraph = resetParagraph(paragraphs, paragraph);
-        }
-        paragraph.setIgnored(true);
+      // タグ要素がなければlineごとparagraphへ
+      // タグ要素があっても、無視タグ内で閉じタグがない場合もlineごとparagraphへ
+      if (!line.contains("<")
+          || (!openIgnoneTag.isEmpty() && !line.contains("</" + openIgnoneTag))) {
+        paragraph.setIgnored(!openIgnoneTag.isEmpty());
+        paragraph.append(line);
+        continue;
       }
 
-      if (paragraph.isIgnored()
-          && (line.contains("</style>")
-              || line.contains("</script>")
-              || line.contains("</colgroup>"))
-              || (inTag && line.contains(">"))) {
-        paragraph.append(line);
-        paragraph = resetParagraph(paragraphs, paragraph);
-        inTag = false;
-        continue;
-      }
-      // コードブロックの最後でparagraphに追加
-      if (line.contains("</code>")) {
-        paragraph.append(line);
-        paragraphs.add(paragraph);
-        paragraph = new Paragraph();
-        continue;
-      }
-      if (!paragraph.isIgnored()) {
-        // 翻訳時の記法崩れ防止のため、thタグ、tdタグを1行にまとめて整形する
-        if (line.contains("</th>") || line.contains("</td>")) {
-          String tableDataStr = (tableData.append(line.replaceAll(REGEX_LINEBREAK, ""))).toString();
-          // 暫定対応
-          // th,tdタグ内の <p class="tableblock"></p> に囲まれたテキストを翻訳した際、
-          // テキストがtdタグ外に出力される事象を防ぐため、テキストを置換用文字列で囲む
-          if (tableDataStr.contains("<p class=\"tableblock\">")) {
-            Matcher matcher = PATTERN_P_TABLEBLOCK.matcher(tableDataStr);
-            if (matcher.matches()) {
-              // 暫定対応
-              // tdタグ内のpタグ内のテキストにbrタグが存在する場合、
-              // brタグがtdタグの外へ出力される事象を防ぐため、brタグを削除する
-              if (tableDataStr.contains("<br>")) {
-                tableDataStr = tableDataStr.replaceAll(TAG_BR, "");
-              }
-            }
+      // タグがある場合はタグを翻訳無視、innnerTextを翻訳対象
+      // 無視タグ出現の場合は閉じタグ出現まで翻訳無視
+      int lineCursor = 0;
+      Matcher matcher = tagPattern.matcher(line);
+
+      while (matcher.find()) {
+        String tag = matcher.group();
+        String tagName = getTagName(tag);
+
+        // タグ前のテキスト検出
+        String preTagText = line.substring(lineCursor, matcher.start());
+        if (!preTagText.isBlank()) {
+          paragraph.setIgnored(!openIgnoneTag.isEmpty());
+          if (!paragraph.isIgnored()) {
+            preTagText = preTagText.replaceAll("(@[A-Za-z]*)(\\S)", "$1 $2");
           }
-          paragraph.append(tableDataStr);
-          tableData.delete(0, tableData.length());
-          inTableData = false;
-          continue;
-        }
-        // 空行は翻訳しない
-        if (!paragraph.isIgnored() && line.isBlank()) {
-          paragraphs.add(paragraph);
-          paragraph = getEmptyParagraph();
-          paragraph = resetParagraph(paragraphs, paragraph);
-          continue;
-        }
-        // コードブロックは翻訳されないようにする
-        if (!paragraph.isIgnored() && line.contains("<code")) {
-          paragraphs.add(paragraph);
-          paragraph = new Paragraph();
-          paragraph.append(line);
-          paragraph.setIgnored(true);
-          // コードブロックが1行で完結した場合にはそのままparagraphsに追加
-          if (line.contains("</code")) {
+          if (lineCursor == 0) {
+            paragraph.append(preTagText);
+          } else {
+            paragraph.inlineAppend(preTagText);
+          }
+          if (openIgnoneTag.isEmpty() && !paragraph.getText().isEmpty()) {
             paragraphs.add(paragraph);
             paragraph = new Paragraph();
           }
-          continue;
         }
-        // 翻訳時の記法崩れ防止のため、thタグ、tdタグは1行にまとめる
-        if (inTableData || line.contains("<th") || line.contains("<td")) {
-          tableData.append(line.replaceAll(REGEX_LINEBREAK, ""));
-          inTableData = true;
-          continue;
+
+        // 無視タグ開始
+        if (openIgnoneTag.isEmpty() && IGNORE_TAGS.contains(tagName) && !tag.contains("/")) {
+          openIgnoneTag = tagName;
+          if (!paragraph.getText().isEmpty()) {
+            paragraphs.add(paragraph);
+            paragraph = new Paragraph();
+          }
         }
-        // テキスト内に@XxxYyyの文字列が存在し、後ろに空白がない場合翻訳漏れが発生するため空白を追加
-        line = line.replaceAll("(@[A-Za-z]*)(\\S)", "$1 $2");
+
+        // 無視タグ終了
+        if (tag.contains("/") && openIgnoneTag.equals(tagName)) {
+          openIgnoneTag = "";
+        }
+
+        // タグの処理
+        paragraph.setIgnored(true);
+        paragraph.inlineAppend(tag);
+        if (openIgnoneTag.isEmpty() && !paragraph.getText().isEmpty()) {
+          paragraphs.add(paragraph);
+          paragraph = new Paragraph();
+        }
+
+        lineCursor = matcher.end();
       }
-      paragraph.append(line);
-    }
-    paragraphs.add(paragraph);
 
+      // タグ後のテキスト検出
+      String afterTagText = line.substring(lineCursor, line.length());
+      if (!afterTagText.isEmpty()) {
+        if (openIgnoneTag.isEmpty()) {
+          paragraph = new Paragraph();
+        }
+
+        paragraph.setIgnored(!openIgnoneTag.isEmpty());
+
+        if (!paragraph.isIgnored()) {
+          afterTagText = afterTagText.replaceAll("(@[A-Za-z]*)(\\S)", "$1 $2");
+        }
+
+        paragraph.inlineAppend(afterTagText);
+      }
+    }
+
+    paragraphs.forEach(p -> log.info("paragraph: {}", p));
     return paragraphs;
-  }
-
-  private Paragraph getEmptyParagraph() {
-    Paragraph paragraph = new Paragraph();
-    paragraph.setIgnored(true);
-    return paragraph;
-  }
-
-  private Paragraph resetParagraph(List<Paragraph> paragraphs, Paragraph paragraph) {
-    if (!paragraph.getText().isEmpty() || paragraph.isIgnored()) {
-      paragraphs.add(paragraph);
-    }
-    return new Paragraph();
   }
 
   @Override
@@ -163,13 +137,11 @@ public class HtmlParagraphResolver implements ParagraphResolver {
 
     // 置換用文字列を元に戻す
     if (StringUtils.isNotBlank(translatedText)) {
-      translatedText =
-          translatedText
-              .replace('“', '\"').replace('”', '\"');
+      translatedText = translatedText.replace('“', '\"').replace('”', '\"');
     }
 
     if (escapePrefix.isEmpty()) {
-      return getCorrectHtml(originalText, translatedText);
+      return translatedText;
     }
 
     StringBuilder correctText = new StringBuilder();
@@ -179,71 +151,12 @@ public class HtmlParagraphResolver implements ParagraphResolver {
     return correctText.toString();
   }
 
-  private String getCorrectHtml(String originalText, String translatedText) {
-    // 元のHTMLのタグ構造をListで取得
-    List<String> tags = extractTags(originalText);
-
-    StringBuilder correctedHtml = new StringBuilder();
-    int index = 0;
-
-    // 翻訳後のテキストを元のHTMLのタグ構造になるように組み直す
-    for (String originalTag : tags) {
-        String tagType = getTagType(originalTag);
-
-        int tagStartIndex = findTagIndex(translatedText, tagType, index);
-        if (tagStartIndex != -1) {
-            int tagEndIndex = translatedText.indexOf(">", tagStartIndex) + 1;
-
-            // タグとその内包するテキストをappend
-            correctedHtml.append(originalTag);
-            String textWithinTag = getTextWithinTag(translatedText, tagEndIndex);
-            correctedHtml.append(textWithinTag);
-
-            // appendしたタグおよびテキストは翻訳後HTMLから削除
-            translatedText = translatedText.substring(0, tagStartIndex) + translatedText.substring(tagEndIndex + textWithinTag.length());
-        } else {
-            correctedHtml.append(originalTag).append("\n");
-        }
-    }
-    return correctedHtml.toString();
-  }
-
-  private List<String> extractTags(String html) {
-    ArrayList<String> tags = new ArrayList<>();
-    Pattern pattern = Pattern.compile("<[^>]+>");
-    Matcher matcher = pattern.matcher(html);
-
-    while (matcher.find()) {
-        tags.add(matcher.group());
-    }
-
-    return tags;
-  }
-
-  private String getTextWithinTag(String html, int startIndex) {
-    int nextTagStart = html.indexOf("<", startIndex);
-    if (nextTagStart == -1) {
-        return html.substring(startIndex);
-    }
-    return html.substring(startIndex, nextTagStart);
-  }
-
-  private static String getTagType(String tag) {
+  private static String getTagName(String tag) {
     Pattern pattern = Pattern.compile("</?([a-zA-Z0-9]+)");
     Matcher matcher = pattern.matcher(tag);
     if (matcher.find()) {
-        return matcher.group(1);
+      return matcher.group(1);
     }
     return "";
   }
-
-  private int findTagIndex(String html, String tagType, int startIndex) {
-    Pattern pattern = Pattern.compile("<\\/?\\s*" + tagType + "[^>]*>");
-    Matcher matcher = pattern.matcher(html);
-    if (matcher.find(startIndex)) {
-        return matcher.start();
-    }
-    return -1;
-  }
-
 }
