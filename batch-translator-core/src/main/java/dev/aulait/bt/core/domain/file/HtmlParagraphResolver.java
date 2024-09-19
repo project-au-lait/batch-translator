@@ -15,7 +15,7 @@ import org.apache.commons.lang3.StringUtils;
 @Slf4j
 public class HtmlParagraphResolver implements ParagraphResolver {
 
-  private static final List<String> INNER_IGNORE_TAGS =
+  private static final List<String> IGNORE_TAGS =
       Arrays.asList("style", "script", "colgroup", "code");
 
   @Override
@@ -30,137 +30,107 @@ public class HtmlParagraphResolver implements ParagraphResolver {
     }
 
     List<Paragraph> paragraphs = new ArrayList<>();
-    Pattern tagPattern = Pattern.compile("<[^>]+>");
-    String openIgnoneTag = "";
-
     Paragraph paragraph = new Paragraph();
 
-    for (String line : lines) {
+    String openIgnoreTag = "";
 
-      // タグ要素がなければlineごとparagraphへ
-      // タグ要素があっても、無視タグ内で閉じタグがない場合もlineごとparagraphへ
-      if (!line.contains("<")
-          || (!openIgnoneTag.isEmpty() && !line.contains("</" + openIgnoneTag))) {
-        paragraph.setIgnored(!openIgnoneTag.isEmpty());
-        paragraph.append(line);
+    for (String line : lines) {
+      // If there is no tag element, put the whole line into the paragraph.
+      // Even if there is a tag element, if the translation-ignore tag is being expanded and there
+      // is no closing tag, the entire line is placed in the paragraph.
+      if (StringUtils.containsNone(line, "<")
+          || (StringUtils.isNotEmpty(openIgnoreTag)
+              && !containsCloseIgnoreTag(line, openIgnoreTag))) {
+        paragraph = prepareParagraph(paragraphs, paragraph, StringUtils.isNotEmpty(openIgnoreTag));
+        appendParagraph(paragraph, line, true);
         continue;
       }
 
-      // タグがある場合はタグを翻訳無視、innnerTextを翻訳対象
-      // 無視タグ出現の場合は閉じタグ出現まで翻訳無視
+      // Tags ignored for translation, non-tag Text targeted for translation.
+      // If translation-ignored tags appear, all translation is ignored until the closing tag
+      // appears.
+      Matcher matcher = Pattern.compile("<[^>]+>").matcher(line);
       int lineCursor = 0;
-      Matcher matcher = tagPattern.matcher(line);
 
       while (matcher.find()) {
-        String tag = matcher.group();
-        String tagName = getTagName(tag);
-
-        // タグ前のテキスト検出
-        String beforeTagText = line.substring(lineCursor, matcher.start());
-        if (!beforeTagText.isBlank()) {
-          paragraph.setIgnored(!openIgnoneTag.isEmpty());
-          if (!paragraph.isIgnored()) {
-            beforeTagText = beforeTagText.replaceAll("(@[A-Za-z]*)(\\S)", "$1 $2");
-          }
-          if (lineCursor == 0) {
-            paragraph.append(beforeTagText);
-          } else {
-            paragraph.inlineAppend(beforeTagText);
-          }
-          if (openIgnoneTag.isEmpty() && !paragraph.getText().isEmpty()) {
-            paragraphs.add(paragraph);
-            paragraph = new Paragraph();
-          }
+        // text before tag
+        String textBeforeTag = line.substring(lineCursor, matcher.start());
+        if (StringUtils.isNotEmpty(textBeforeTag)) {
+          paragraph =
+              prepareParagraph(paragraphs, paragraph, StringUtils.isNotEmpty(openIgnoreTag));
+          appendParagraph(paragraph, textBeforeTag, lineCursor == 0);
         }
 
-        // 無視タグ開始
-        if (openIgnoneTag.isEmpty() && INNER_IGNORE_TAGS.contains(tagName) && !tag.contains("/")) {
-          openIgnoneTag = tagName;
-          if (!paragraph.getText().isEmpty()) {
-            paragraphs.add(paragraph);
-            paragraph = new Paragraph();
-          }
-        }
+        // open or close translation ignore tag
+        openIgnoreTag = ignoreTagSet(matcher.group(), openIgnoreTag);
 
-        // 無視タグ終了
-        if (tag.contains("/") && openIgnoneTag.equals(tagName)) {
-          openIgnoneTag = "";
-        }
-
-        // タグの処理
-        if (!paragraph.isIgnored() && !paragraph.getText().isEmpty()) {
-          paragraphs.add(paragraph);
-          paragraph = new Paragraph();
-        }
-        paragraph.setIgnored(true);
-        paragraph.inlineAppend(tag);
-        if (openIgnoneTag.isEmpty() && !paragraph.getText().isEmpty()) {
-          paragraphs.add(paragraph);
-          paragraph = new Paragraph();
-        }
+        // tag
+        paragraph = prepareParagraph(paragraphs, paragraph, true);
+        appendParagraph(paragraph, matcher.group(), matcher.start() == 0);
 
         lineCursor = matcher.end();
       }
 
-      // タグ後のテキスト検出
-      String afterTagText = line.substring(lineCursor, line.length());
-      if (!afterTagText.isEmpty()) {
-        if (openIgnoneTag.isEmpty()) {
-          paragraph = new Paragraph();
-        }
-
-        paragraph.setIgnored(!openIgnoneTag.isEmpty());
-
-        if (!paragraph.isIgnored()) {
-          afterTagText = afterTagText.replaceAll("(@[A-Za-z]*)(\\S)", "$1 $2");
-        }
-
-        paragraph.inlineAppend(afterTagText);
+      // text after tag
+      String textAfterTag = line.substring(lineCursor, line.length());
+      if (StringUtils.isNotEmpty(textAfterTag)) {
+        paragraph = prepareParagraph(paragraphs, paragraph, StringUtils.isNotEmpty(openIgnoreTag));
+        appendParagraph(paragraph, textAfterTag, false);
       }
     }
 
+    paragraphs.add(paragraph);
     paragraphs.forEach(p -> log.info("paragraph: {}", p));
     return paragraphs;
   }
 
   @Override
   public String correct(Paragraph paragraph) {
-    return correct(
-        paragraph.getText(),
-        paragraph.getTranslatedText(),
-        paragraph.getEscapePrefix(),
-        paragraph.isIgnored());
+    return paragraph.isIgnored() ? paragraph.getText() : paragraph.getTranslatedText();
   }
 
-  public String correct(
-      String originalText, String translatedText, String escapePrefix, boolean ignored) {
-
-    if (ignored) {
-      return originalText;
+  private Paragraph prepareParagraph(
+      List<Paragraph> paragraphs, Paragraph paragraph, boolean ignore) {
+    if (StringUtils.isNotBlank(paragraph.getText()) && (paragraph.isIgnored() ^ ignore)) {
+      paragraphs.add(paragraph);
+      paragraph = new Paragraph();
     }
+    paragraph.setIgnored(ignore);
 
-    // 置換用文字列を元に戻す
-    if (StringUtils.isNotBlank(translatedText)) {
-      translatedText = translatedText.replace('“', '\"').replace('”', '\"');
-    }
-
-    if (escapePrefix.isEmpty()) {
-      return translatedText;
-    }
-
-    StringBuilder correctText = new StringBuilder();
-    correctText.append(escapePrefix);
-    correctText.append(" ");
-    correctText.append(translatedText);
-    return correctText.toString();
+    return paragraph;
   }
 
-  private static String getTagName(String tag) {
-    Pattern pattern = Pattern.compile("</?([a-zA-Z0-9]+)");
-    Matcher matcher = pattern.matcher(tag);
-    if (matcher.find()) {
-      return matcher.group(1);
+  private void appendParagraph(Paragraph paragraph, String text, boolean bol) {
+    if (!paragraph.isIgnored()) {
+      text = process4translate(text);
     }
-    return "";
+
+    if (bol) {
+      paragraph.append(text);
+    } else {
+      paragraph.inlineAppend(text);
+    }
+  }
+
+  private String ignoreTagSet(String tag, String ignoreTag) {
+    Matcher matcher = Pattern.compile("</?([\\w]+)").matcher(tag);
+    String tagName = matcher.find() ? matcher.group(1) : "";
+
+    if (containsCloseIgnoreTag(tag, ignoreTag)) {
+      ignoreTag = "";
+    } else if (StringUtils.isEmpty(ignoreTag) && IGNORE_TAGS.contains(tagName)) {
+      ignoreTag = tagName;
+    }
+
+    return ignoreTag;
+  }
+
+  private boolean containsCloseIgnoreTag(String text, String ignoreTag) {
+    if (StringUtils.isEmpty(ignoreTag)) return false;
+    return text.contains("</" + ignoreTag);
+  }
+
+  private String process4translate(String text) {
+    return text.replaceAll("(@[\\w]+)(\\S)", "$1 $2");
   }
 }
