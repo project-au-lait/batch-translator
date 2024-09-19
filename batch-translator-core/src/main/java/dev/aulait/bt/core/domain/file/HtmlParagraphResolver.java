@@ -16,7 +16,7 @@ import org.apache.commons.lang3.StringUtils;
 public class HtmlParagraphResolver implements ParagraphResolver {
 
   private static final List<String> IGNORE_TAGS =
-      Arrays.asList("style", "script", "colgroup", "code");
+      Arrays.asList("style", "script", "colgroup", "pre", "code");
 
   @Override
   public List<Paragraph> resolve(Path file) {
@@ -55,7 +55,7 @@ public class HtmlParagraphResolver implements ParagraphResolver {
       while (matcher.find()) {
         // text before tag
         String textBeforeTag = line.substring(lineCursor, matcher.start());
-        if (StringUtils.isNotEmpty(textBeforeTag)) {
+        if (StringUtils.isNotBlank(textBeforeTag)) {
           paragraph =
               prepareParagraph(paragraphs, paragraph, StringUtils.isNotEmpty(openIgnoreTag));
           appendParagraph(paragraph, textBeforeTag, lineCursor == 0);
@@ -66,7 +66,8 @@ public class HtmlParagraphResolver implements ParagraphResolver {
 
         // tag
         paragraph = prepareParagraph(paragraphs, paragraph, true);
-        appendParagraph(paragraph, matcher.group(), matcher.start() == 0);
+        appendParagraph(
+            paragraph, matcher.group(), lineCursor == 0 && StringUtils.isBlank(textBeforeTag));
 
         lineCursor = matcher.end();
       }
@@ -80,7 +81,6 @@ public class HtmlParagraphResolver implements ParagraphResolver {
     }
 
     paragraphs.add(paragraph);
-    paragraphs.forEach(p -> log.info("paragraph: {}", p));
     return paragraphs;
   }
 
