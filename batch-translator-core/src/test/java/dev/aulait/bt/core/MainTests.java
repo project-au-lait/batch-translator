@@ -132,19 +132,20 @@ public class MainTests {
     assertEquals(Files.readString(expectedFile), Files.readString(outputFile));
   }
 
-  @Test
-  public void html2htmlGcpTest() throws URISyntaxException, IOException {
-    Path inputFile = Path.of(getClass().getResource("MainTests/fileTest/file.html").toURI());
-    Path outputFile = inputFile.getParent().resolve("file_en_gcp.html");
+  // TODO Consider whether to continue to use GCP
+  // @Test
+  // public void html2htmlGcpTest() throws URISyntaxException, IOException {
+  //   Path inputFile = Path.of(getClass().getResource("MainTests/fileTest/file.html").toURI());
+  //   Path outputFile = inputFile.getParent().resolve("file_en_gcp.html");
 
-    main.execute(
-        new String[] {
-          "-m", "ja2en", "-s", inputFile.toString(), "-t", outputFile.toString(), "-e", "gcp"
-        });
+  //   main.execute(
+  //       new String[] {
+  //         "-m", "ja2en", "-s", inputFile.toString(), "-t", outputFile.toString(), "-e", "gcp"
+  //       });
 
-    Path expectedFile =
-        Path.of(getClass().getResource("MainTests/fileTest/file_en_gcp_expected.html").toURI());
+  //   Path expectedFile =
+  //       Path.of(getClass().getResource("MainTests/fileTest/file_en_gcp_expected.html").toURI());
 
-    assertEquals(Files.readString(expectedFile), Files.readString(outputFile));
-  }
+  //   assertEquals(Files.readString(expectedFile), Files.readString(outputFile));
+  // }
 }
