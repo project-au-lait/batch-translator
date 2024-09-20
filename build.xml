@@ -28,7 +28,7 @@
 
     <property name="version" value="" />
     <fail if:blank="${version}"
-      message="Please specify version in the system properties. (e.g. mvnw -Dant.target=set-version -Dversion=1.x.x" />
+      message="Please specify version in the system properties. (e.g. mvnw -D ant.target=set-version -D version=1.x.x" />
 
     <exec executable="${mvn.cmd}" dir="${basedir}">
       <arg line="versions:set -DnewVersion=${version} -DgenerateBackupPoms=false" />
