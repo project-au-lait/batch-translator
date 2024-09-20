@@ -21,6 +21,10 @@ public class Paragraph {
     text.append(line);
   }
 
+  public void inlineAppend(String line) {
+    text.append(line);
+  }
+
   public String getText() {
     return text.toString();
   }

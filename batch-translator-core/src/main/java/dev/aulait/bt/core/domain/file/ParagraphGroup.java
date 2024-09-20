@@ -59,6 +59,7 @@ public class ParagraphGroup {
       if (length > 1000) {
         groups.add(group);
         group = new ParagraphGroup(useDelimiter);
+        length = 0;
       }
     }
 
