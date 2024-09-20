@@ -2,7 +2,7 @@
 <project xmlns:if="ant:if"
   xmlns:unless="ant:unless" name="batch-translator" basedir="." default="deploy">
 
-  <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpath="${maven.plugin.classpath}"/>
+  <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpath="${maven.plugin.classpath}" />
 
   <condition property="os.windows" value="true" else="false">
     <os family="windows" />
@@ -14,13 +14,21 @@
 
 
   <target name="deploy">
+
+    <condition property="maven-central" value=",maven-central" else="">
+      <not>
+        <matches pattern="-SNAPSHOT$" string="${project.version}" />
+      </not>
+    </condition>
+
     <exec executable="${mvn.cmd}" dir="${basedir}" failonerror="true">
       <arg line="clean test sonar:sonar -P analyze --fail-at-end" />
     </exec>
 
-    <!-- <exec executable="${mvn.cmd}" dir="${basedir}" failonerror="true">
-      <arg line="deploy -P release -Dmaven.test.skip=true" />
-    </exec> -->
+    <exec executable="${mvn.cmd}" dir="${basedir}" failonerror="true">
+      <arg line="deploy -P release${maven-central}" />
+    </exec>
+
   </target>
 
 
