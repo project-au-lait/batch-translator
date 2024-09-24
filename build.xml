@@ -35,11 +35,17 @@
   <target name="set-version">
 
     <property name="version" value="" />
-    <fail if:blank="${version}" message="Please specify version in the system properties. (e.g. mvnw -Dant.target=set-version -Dversion=1.x.x"/>
+    <fail if:blank="${version}"
+      message="Please specify version in the system properties. (e.g. mvnw -D ant.target=set-version -D version=1.x.x" />
 
     <exec executable="${mvn.cmd}" dir="${basedir}">
       <arg line="versions:set -DnewVersion=${version} -DgenerateBackupPoms=false" />
     </exec>
+
+    <replaceregexp
+      file="${basedir}/batch-translator-maven-plugin/src/test/projects/test-project-1/pom.xml"
+      match="(?&lt;=artifactId&gt;batch-translator-maven-plugin-test&lt;.*\n?.*version.*)(\d+[\.\d]+\d+)(-SNAPSHOT)?"
+      replace="${version}" />
 
     <if>
       <not>
@@ -47,7 +53,8 @@
       </not>
       <then>
         <replaceregexp flags="g">
-          <regexp pattern="((?&lt;=batch-translator-core.*)|(?&lt;=version&gt;.*))(\d+[\.\d]+\d+)" />
+          <regexp
+            pattern="((?&lt;=batch-translator-core.*)|(?&lt;=version&gt;.*))(\d+[\.\d]+\d+)(-SNAPSHOT)?" />
           <substitution expression="${version}" />
           <fileset dir="${basedir}">
             <include name="README*.md" />
