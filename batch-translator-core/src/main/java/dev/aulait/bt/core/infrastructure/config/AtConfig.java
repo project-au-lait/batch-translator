@@ -1,7 +1,6 @@
 package dev.aulait.bt.core.infrastructure.config;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
@@ -10,6 +9,7 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 @Data
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -51,11 +51,17 @@ public class AtConfig {
     try {
       prop.load(configUrl.openStream());
     } catch (IOException e) {
-      throw new UncheckedIOException(e);
+      log.debug("Property file could not be loaded.", e);
     }
 
     setApiKey(prop.getProperty("api_key"));
     setApiSecret(prop.getProperty("api_secret"));
     setUser(prop.getProperty("name"));
+  }
+
+  public void ckProp4Minhon() {
+    if (StringUtils.isAnyBlank(apiKey, apiSecret, user)) {
+      throw new IllegalArgumentException("Required property is not set for engine:minhon.");
+    }
   }
 }
