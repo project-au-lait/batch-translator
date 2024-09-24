@@ -21,13 +21,14 @@ public class BasicTranslatorFactory {
 
   public static Translator createTranslator(String engineName) {
     switch (engineName.toUpperCase()) {
-      case "MINHON":
-        return minhonTranslator;
       case "AWS":
         return awsTranslator;
       case "GCP":
         return gcpTranslator;
+
+      case "MINHON":
       default:
+        config.ckProp4Minhon();
         return minhonTranslator;
     }
   }
