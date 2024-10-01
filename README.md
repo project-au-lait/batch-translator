@@ -106,7 +106,7 @@ java -jar batch-translator-core-1.0.0.jar -m ja2en -p *.adoc -s docs -t docs/en 
 
 #### Run as Maven Plugin
 
-Add the Batch Tracer Maven Plugin to pom. xml.
+Add the Batch Translator Maven Plugin to pom. xml.
 
 - pom.xml
 
