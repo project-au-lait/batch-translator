@@ -87,21 +87,21 @@ Cloud Translation APIの料金については[こちら](https://cloud.google.co
 #### Java コマンドで実行
 
 ```
-curl -o batch-translator-core-1.0.0.jar https://repo1.maven.org/maven2/dev/aulait/bt/batch-translator-core/1.0.0/batch-translator-core-1.0.0.jar
+curl -o batch-translator-core-1.1.jar https://repo1.maven.org/maven2/dev/aulait/bt/batch-translator-core/1.1/batch-translator-core-1.1.jar
 
-java -jar batch-translator-core-1.0.0.jar -m Mode -s Source -t Target -e Engine(minhon or aws)
+java -jar batch-translator-core-1.1.jar -m Mode -s Source -t Target -e Engine(minhon or aws)
 ```
 
 例 1) README_ja.md を日本語から英語に翻訳し README.md に出力するコマンド
 
 ```
-java -jar batch-translator-core-1.0.0.jar -m ja2en -s README_ja.md -t README.md -e aws
+java -jar batch-translator-core-1.1.jar -m ja2en -s README_ja.md -t README.md -e aws
 ```
 
 例 2) docs ディレクトリ以下の拡張子が adoc である全ファイルを日本語から英語に翻訳し、docs/en ディレクトリに出力するコマンド
 
 ```
-java -jar batch-translator-core-1.0.0.jar -m ja2en -p *.adoc -s docs -t docs/en -e aws
+java -jar batch-translator-core-1.1.jar -m ja2en -p *.adoc -s docs -t docs/en -e aws
 ```
 
 #### Maven Plugin として実行
@@ -116,7 +116,7 @@ pom.xml に Batch Traslator の Maven Plugin を追加します。
     <plugin>
       <groupId>dev.aulait.bt</groupId>
       <artifactId>batch-translator-maven-plugin</artifactId>
-      <version>1.0.0</version>
+      <version>1.1</version>
     </plugin>
   </plugins>
 </build>

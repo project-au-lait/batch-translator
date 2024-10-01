@@ -5,7 +5,7 @@
 
   <groupId>dev.aulait.bt</groupId>
   <artifactId>batch-translator-maven-plugin-test</artifactId>
-  <version>1.1-SNAPSHOT</version>
+  <version>1.1</version>
   <packaging>jar</packaging>
   <name>Test RunApplicationMojo</name>
 

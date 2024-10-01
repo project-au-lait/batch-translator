@@ -87,21 +87,21 @@ Pricing for the Cloud Translation API is available [here] at https://cloud.googl
 #### Run with Java Command
 
 ```
-curl -o batch-translator-core-1.0.0.jar https://repo1.maven.org/maven2/dev/aulait/bt/batch-translator-core/1.0.0/batch-translator-core-1.0.0.jar
+curl -o batch-translator-core-1.1.jar https://repo1.maven.org/maven2/dev/aulait/bt/batch-translator-core/1.1/batch-translator-core-1.1.jar
 
-java -jar batch-translator-core-1.0.0.jar -m Mode -s Source -t Target -e Engine(minhon or aws)
+java -jar batch-translator-core-1.1.jar -m Mode -s Source -t Target -e Engine(minhon or aws)
 ```
 
 Example 1) Command that translates README _ ja. md from Japanese to English and outputs it to README. md
 
 ```
-java -jar batch-translator-core-1.0.0.jar -m ja2en -s README_ja.md -t README.md -e aws
+java -jar batch-translator-core-1.1.jar -m ja2en -s README_ja.md -t README.md -e aws
 ```
 
 Example 2) A command that translates all files with the extension adoc under the docs directory from Japanese to English and outputs them to the docs/en directory
 
 ```
-java -jar batch-translator-core-1.0.0.jar -m ja2en -p *.adoc -s docs -t docs/en -e aws
+java -jar batch-translator-core-1.1.jar -m ja2en -p *.adoc -s docs -t docs/en -e aws
 ```
 
 #### Run as Maven Plugin
@@ -116,7 +116,7 @@ Add the Batch Translator Maven Plugin to pom. xml.
     <plugin>
       <groupId>dev.aulait.bt</groupId>
       <artifactId>batch-translator-maven-plugin</artifactId>
-      <version>1.0.0</version>
+      <version>1.1</version>
     </plugin>
   </plugins>
 </build>
