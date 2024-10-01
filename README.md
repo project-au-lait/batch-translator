@@ -15,7 +15,7 @@ The primary usage is as follows:
 
 The following software is required to run the Batch Translator:
 
-- Java 11+
+- Java 17+
 - Maven 3.6 + (when used as the Maven Plugin)
 
 #### Usage

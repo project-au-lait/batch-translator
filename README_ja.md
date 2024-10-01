@@ -15,7 +15,7 @@ Batch Translator はテキストファイルを翻訳する CLI ツールです�
 
 Batch Translator を実行するには以下のソフトウェアが必要です。
 
-- Java 11+
+- Java 17+
 - Maven 3.6+ (Maven Plugin として使用する場合)
 
 #### 使用方法
